@@ -8,7 +8,7 @@ concurrency:
 jobs:
   pre-check:
       permissions:
-      contents: write
+        contents: write
     uses: ./.github/workflows/pre.yml
   frontend-quality-gates:
     needs:
