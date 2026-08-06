@@ -1,0 +1,45 @@
+name: CI
+on: [push,pull_request]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pre-check:
+    uses: ./.github/workflows/pre.yml
+  frontend-quality-gates:
+    needs:
+      - pre-check
+    uses: ./.github/workflows/frontend-quality-gate.yml
+  frontend-tests:
+    needs:
+      - pre-check
+    uses: ./.github/workflows/frontend-tests.yml
+  backend-quality-gates:
+    needs:
+      - pre-check
+    uses: ./.github/workflows/backend-quality-gate.yml
+  backend-tests:
+    needs:
+      - pre-check
+    uses: ./.github/workflows/backend-tests.yml
+  ci-finalize:
+    name: CI Finalize
+    runs-on: ubuntu-24.04
+    if: ${{ always() }}
+    needs:
+      - pre-check
+      - frontend-quality-gates
+      - frontend-tests
+      - backend-quality-gates
+      - backend-tests
+    steps:
+      - name: Report CI completion
+        run: |
+          if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "true" ]; then
+            echo "One or more required jobs failed or were cancelled!"
+            exit 1
+          fi
+
+          echo "All quality gates and tests passed successfully!"

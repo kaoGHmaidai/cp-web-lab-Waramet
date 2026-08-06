@@ -1,0 +1,34 @@
+repos:
+  # 1. standard git check
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-yaml
+      - id: check-added-large-files
+
+  # 2. Secret Leak Detection
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.0
+    hooks:
+      - id: gitleaks
+
+  # 3. Local Go-Fmt Hook (Bypasses remote download entirely)
+  - repo: local
+    hooks:
+      - id: gofmt
+        name: Gofmt Specific Folder
+        entry: gofmt -w
+        language: system
+        types: [go]
+        # Replace 'src/my-go-app/' with your specific Go folder path
+        files: ^src/backend/
+
+  # 4. Prettier Formatting (Runs Last)
+  - repo: local
+    hooks:
+      - id: prettier
+        name: Prettier Formatting
+        entry: npm --prefix src/frontend run format:precommit
+        language: system
+        pass_filenames: false
+        types_or: [javascript, jsx, ts, tsx, json, css, markdown, yaml]

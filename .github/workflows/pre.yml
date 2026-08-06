@@ -1,0 +1,75 @@
+name: Pre-check
+on:
+  workflow_call:
+jobs:
+
+  mr-lint:
+    name: MR Title Lint
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: src/frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install commitlint
+        if: ${{ github.event.pull_request != null }}
+        run: npm install --save-dev @commitlint/cli @commitlint/config-conventional
+
+      - name: Lint PR title
+        if: ${{ github.event.pull_request != null }}
+        run: echo "${{ github.event.pull_request.title }}" | npx commitlint --verbose
+
+  format-and-fix:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # Needed to push formatted commits back to the repo
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Required so the commit action can push back to PR branches correctly
+          ref: ${{ github.head_ref || github.ref_name }}
+      # --- 1. Go Formatting ---
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'src/backend/go.mod' # Automatically uses your Go version
+      - name: Format Go Backend
+        run: |
+          # -w rewrites files in place, -s simplifies code
+          gofmt -s -w ./src/backend
+      # --- 2. Next.js / JS Formatting ---
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: 'src/frontend/package-lock.json'
+      - name: Format Next.js Frontend
+        run: |
+          cd src/frontend
+          npm ci
+          # Formats JS, TS, JSX, TSX, CSS, and JSON files in-place
+          npx prettier --write "**/*.{js,jsx,ts,tsx,json,css,scss,md}"
+      # --- 3. Auto-Commit & Push Fixes ---
+      - name: Commit formatted code
+        id: auto-commit
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: auto-format Go and Next.js code"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"
+      # --- 4. Fail CI if changes were made ---
+      - name: Fail CI run if unformatted code was found
+        if: steps.auto-commit.outputs.changes_detected == 'true'
+        run: |
+          echo "::error::Unformatted code detected! A fix commit has been pushed to your branch."
+          exit 1

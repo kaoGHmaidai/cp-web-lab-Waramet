@@ -1,0 +1,28 @@
+services:
+  backend:
+    image: golang:1.26.5-alpine
+    working_dir: /app
+    command: sh -c "go mod download && go run ."
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src/backend:/app
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm ci && npm run dev -- --hostname 0.0.0.0 --port 3001"
+    depends_on:
+      - backend
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./src/frontend:/app
+      - frontend-node-modules:/app/node_modules
+
+volumes:
+  go-mod-cache:
+  go-build-cache:
+  frontend-node-modules:

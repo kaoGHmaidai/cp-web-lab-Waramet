@@ -1,0 +1,113 @@
+name: Frontend Code quality check
+on:
+  workflow_call:
+defaults:
+  run:
+    working-directory: src/frontend
+jobs:
+  js-lint:
+    name: Lint & Format Check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: 'src/frontend/package-lock.json'
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+  docs-check:
+    name: Documentation Coverage
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: 'src/frontend/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check JSDoc coverage
+        run: npx -y documentation lint components/sample-card.tsx
+  duplicate-code:
+    name: Duplicate Code Detection
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: 'src/frontend/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run jscpd (copy-paste detector)
+        run: npx jscpd app components --threshold 5 --reporters console,badge
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: 'src/frontend/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Run Semgrep (SAST)
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: p/javascript
+
+      - name: Secret scanning (gitleaks)
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  maintainability:
+    name: Dead Code & Unused Deps
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: 'src/frontend/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check unused dependencies (depcheck)
+        run: npx depcheck --ignores="eslint*,prettier,husky,@commitlint/*,@tailwindcss/postcss,@types/jest,@types/node,jest-environment-jsdom,postcss,tailwindcss,ts-node"
+
+      - name: Check unused exports (ts-prune)
+        run: npx ts-prune || true # non-blocking, informational
+        continue-on-error: true
