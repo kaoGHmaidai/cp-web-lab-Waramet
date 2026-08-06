@@ -18,11 +18,13 @@ func TestRegisterMountsAllRouters(t *testing.T) {
 	appService := &service.MockService{}
 	appService.On("Healthz").Return("ok")
 	appService.On("FooBar").Return("foo bar")
+	appService.On("Greet", "").Return("Hello, friend!")
 
 	app := fiber.New()
 	Register(app,
 		HealthzRouter{Service: appService},
 		FooBarRouter{Service: appService},
+		GreetRouter{Service: appService},
 	)
 
 	healthResponse := performRequest(t, app, http.MethodGet, "/healthz")
@@ -39,6 +41,13 @@ func TestRegisterMountsAllRouters(t *testing.T) {
 	require.NoError(t, fooResponse.Body.Close())
 	require.Equal(t, http.StatusOK, fooResponse.StatusCode)
 	require.Equal(t, "foo bar", string(fooBody))
+
+	greetResponse := performRequest(t, app, http.MethodGet, "/greet")
+	greetBody, err := io.ReadAll(greetResponse.Body)
+	require.NoError(t, err)
+	require.NoError(t, greetResponse.Body.Close())
+	require.Equal(t, http.StatusOK, greetResponse.StatusCode)
+	require.JSONEq(t, `{"message":"Hello, friend!"}`, string(greetBody))
 
 	appService.AssertExpectations(t)
 }
@@ -78,6 +87,25 @@ func TestFooBarRouterRegister(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, response.StatusCode)
 	require.Equal(t, "foo bar", string(body))
+	appService.AssertExpectations(t)
+}
+
+func TestGreetRouterRegister(t *testing.T) {
+	t.Parallel()
+
+	appService := &service.MockService{}
+	appService.On("Greet", "Ann").Return("Hello, Ann!")
+
+	app := fiber.New()
+	GreetRouter{Service: appService}.Register(app)
+
+	response := performRequest(t, app, http.MethodGet, "/greet?name=Ann")
+	body, err := io.ReadAll(response.Body)
+	require.NoError(t, err)
+	require.NoError(t, response.Body.Close())
+
+	require.Equal(t, http.StatusOK, response.StatusCode)
+	require.JSONEq(t, `{"message":"Hello, Ann!"}`, string(body))
 	appService.AssertExpectations(t)
 }
 

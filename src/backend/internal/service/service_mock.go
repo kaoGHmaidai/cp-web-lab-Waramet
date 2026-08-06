@@ -15,3 +15,8 @@ func (m *MockService) FooBar() string {
 	args := m.Called()
 	return args.String(0)
 }
+
+func (m *MockService) Greet(name string) string {
+	args := m.Called(name)
+	return args.String(0)
+}
