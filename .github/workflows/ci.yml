@@ -45,4 +45,4 @@ jobs:
           fi
 
           echo "All quality gates and tests passed successfully!"
-
+          
