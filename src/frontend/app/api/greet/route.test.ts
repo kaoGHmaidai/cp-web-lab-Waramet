@@ -29,9 +29,7 @@ describe("GET /api/greet", () => {
     const response = await GET(request);
     const body = await response.json();
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      `${BACKEND_URL}/greet?name=Ann`,
-    );
+    expect(global.fetch).toHaveBeenCalledWith(`${BACKEND_URL}/greet?name=Ann`);
     expect(body).toEqual({ message: "Hello, Ann!" });
   });
 
@@ -44,9 +42,7 @@ describe("GET /api/greet", () => {
     const request = new NextRequest("http://localhost:3000/api/greet");
     await GET(request);
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      `${BACKEND_URL}/greet`,
-    );
+    expect(global.fetch).toHaveBeenCalledWith(`${BACKEND_URL}/greet`);
   });
 
   it("returns an error payload when the backend request fails", async () => {

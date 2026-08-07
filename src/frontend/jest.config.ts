@@ -5,7 +5,7 @@ const jestConfig = {
   clearMocks: true,
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   coverageReporters: ["json-summary", "text", "lcov"],
-moduleNameMapper: {
+  moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
   },
 };
