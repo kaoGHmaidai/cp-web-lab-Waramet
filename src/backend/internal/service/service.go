@@ -5,6 +5,7 @@ import "fmt"
 type Service interface {
 	Healthz() string
 	FooBar() string
+	Greet(name string) string
 }
 
 type HealthService interface {
@@ -15,15 +16,21 @@ type FooBarService interface {
 	FooBar() string
 }
 
+type GreetService interface {
+	Greet(name string) string
+}
+
 type DefaultService struct {
 	healthService HealthService
 	fooBarService FooBarService
+	greetService  GreetService
 }
 
-func NewDefaultService(healthService HealthService, fooBarService FooBarService) *DefaultService {
+func NewDefaultService(healthService HealthService, fooBarService FooBarService, greetService GreetService) *DefaultService {
 	return &DefaultService{
 		healthService: healthService,
 		fooBarService: fooBarService,
+		greetService:  greetService,
 	}
 }
 
@@ -33,6 +40,10 @@ func (s *DefaultService) Healthz() string {
 
 func (s *DefaultService) FooBar() string {
 	return fmt.Sprintf("%s -> %s", s.healthService.Healthz(), s.fooBarService.FooBar())
+}
+
+func (s *DefaultService) Greet(name string) string {
+	return s.greetService.Greet(name)
 }
 
 type DefaultHealthService struct{}
@@ -53,4 +64,20 @@ func NewDefaultFooBarService() FooBarService {
 
 func (s *DefaultFooBarService) FooBar() string {
 	return "foo bar"
+}
+
+const defaultGreetName = "friend"
+
+type DefaultGreetService struct{}
+
+func NewDefaultGreetService() GreetService {
+	return &DefaultGreetService{}
+}
+
+func (s *DefaultGreetService) Greet(name string) string {
+	if name == "" {
+		name = defaultGreetName
+	}
+
+	return fmt.Sprintf("Hello, %s!", name)
 }
